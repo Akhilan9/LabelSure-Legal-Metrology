@@ -1,0 +1,481 @@
+{
+  "ruleset_id": "LMPC-2026-RULES",
+  "ruleset_version": "1",
+  "description": "Source-indexed 2026-RULES review profile. Statutory activation requires source verification and legal sign-off; no fabricated amendments or fines.",
+  "rules": [
+    {
+      "rule_id": "LMPC-2026-RULES-COMMON_NAME",
+      "rule_version": "1",
+      "rule_key": "COMMON_NAME",
+      "title": "Common commodity name",
+      "description": "Evidence review for common commodity name. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(b)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "COMMON_PRODUCT_NAME"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-NET_QUANTITY",
+      "rule_version": "1",
+      "rule_key": "NET_QUANTITY",
+      "title": "Net quantity",
+      "description": "Evidence review for net quantity. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(c)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "net_quantity",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "NET_QUANTITY"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-MRP",
+      "rule_version": "1",
+      "rule_key": "MRP",
+      "title": "Retail price declaration",
+      "description": "Evidence review for retail price declaration. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(e)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MRP"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-UNIT_PRICE",
+      "rule_version": "1",
+      "rule_key": "UNIT_PRICE",
+      "title": "Unit sale price",
+      "description": "Evidence review for unit sale price. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(11); amendment commencement and exemptions require confirmation",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "UNIT_SALE_PRICE"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-PACKING_DATE",
+      "rule_version": "1",
+      "rule_key": "PACKING_DATE",
+      "title": "Manufacture, packing or import month/year",
+      "description": "Evidence review for manufacture, packing or import month/year. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(d); sector-specific exceptions require confirmation",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "month_year",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MONTH_YEAR"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-EXPIRY",
+      "rule_version": "1",
+      "rule_key": "EXPIRY",
+      "title": "Best before / use by",
+      "description": "Evidence review for best before / use by. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(da); perishable products and sector-specific exceptions",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "EXPIRY_DATE"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-MANUFACTURER",
+      "rule_version": "1",
+      "rule_key": "MANUFACTURER",
+      "title": "Manufacturer name and address",
+      "description": "Evidence review for manufacturer name and address. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(a)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MANUFACTURER_NAME",
+        "MANUFACTURER_ADDRESS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-PACKER_IMPORTER",
+      "rule_version": "1",
+      "rule_key": "PACKER_IMPORTER",
+      "title": "Packer / importer identity",
+      "description": "Evidence review for packer / importer identity. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(a); depends on supply-chain role",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "PACKER_NAME",
+        "PACKER_ADDRESS",
+        "IMPORTER_NAME",
+        "IMPORTER_ADDRESS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-ORIGIN",
+      "rule_version": "1",
+      "rule_key": "ORIGIN",
+      "title": "Imported product country of origin",
+      "description": "Evidence review for imported product country of origin. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(aa)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "COUNTRY_OF_ORIGIN"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-CONSUMER_CARE",
+      "rule_version": "1",
+      "rule_key": "CONSUMER_CARE",
+      "title": "Consumer care contact information",
+      "description": "Evidence review for consumer care contact information. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(2)",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "CONSUMER_CARE_PHONE",
+        "CONSUMER_CARE_EMAIL",
+        "CONSUMER_CARE_ADDRESS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-DIMENSIONS",
+      "rule_version": "1",
+      "rule_key": "DIMENSIONS",
+      "title": "Dimensions for relevant commodities",
+      "description": "Evidence review for dimensions for relevant commodities. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(1)(f); applicability requires product context",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "DIMENSIONS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    },
+    {
+      "rule_id": "LMPC-2026-RULES-ECOMMERCE",
+      "rule_version": "1",
+      "rule_key": "ECOMMERCE",
+      "title": "Online seller and listing disclosures",
+      "description": "Evidence review for online seller and listing disclosures. Applicability, exemptions and amendment commencement must be verified before a statutory verdict.",
+      "legal_reference": "LMPC Rules, 2011: Rule 6(10); online listing evidence required",
+      "legal_status": "LEGAL_VERIFICATION_REQUIRED",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "ECOMMERCE_SELLER"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": false,
+        "required_panels": [],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "source": "https://doca.gov.in/lm-ebook/wp-content/uploads/2024/12/FInal-Book-Legal-Metrology-with-amendments.pdf",
+        "review_scope": "2026-RULES",
+        "note": "Source-indexed review profile. Not a legally approved historical consolidation."
+      }
+    }
+  ]
+}

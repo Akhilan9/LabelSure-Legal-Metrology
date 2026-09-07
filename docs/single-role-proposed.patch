@@ -1,0 +1,335 @@
+--- backend\app\api\dev_access.py
++++ backend\app\api\dev_access.py
+@@ -7,15 +7,15 @@
+ 
+ 
+ @router.get("/admin")
+-def admin(user: User = Depends(require_role(Role.ADMIN))):
++def admin(user: User = Depends(require_role(Role.INSPECTOR))):
+     return {"allowed": True, "role": user.role, "capability": "administration"}
+ 
+ 
+ @router.get("/inspection")
+-def inspection(user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR))):
++def inspection(user: User = Depends(require_role(Role.INSPECTOR))):
+     return {"allowed": True, "role": user.role, "capability": "inspection_creation"}
+ 
+ 
+ @router.get("/monitoring")
+-def monitoring(user: User = Depends(require_role(Role.ADMIN, Role.SUPERVISOR))):
++def monitoring(user: User = Depends(require_role(Role.INSPECTOR))):
+     return {"allowed": True, "role": user.role, "capability": "monitoring"}
+--- backend\app\api\inspections.py
++++ backend\app\api\inspections.py
+@@ -152,7 +152,7 @@
+ @router.post("", response_model=InspectionResponse, status_code=status.HTTP_201_CREATED)
+ def create_inspection(
+     payload: InspectionCreate,
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> InspectionResponse:
+     code = generate_inspection_code(session)
+@@ -250,7 +250,7 @@
+ def update_inspection(
+     inspection_id: str,
+     payload: InspectionUpdate,
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> InspectionResponse:
+     inspection = session.get(Inspection, inspection_id)
+@@ -282,7 +282,7 @@
+     request: Request,
+     files: list[UploadFile] = File(...),
+     panel_types: list[str] = Form(default=[]),
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> list[InspectionImageResponse]:
+     inspection = session.get(Inspection, inspection_id)
+@@ -433,7 +433,7 @@
+     inspection_id: str,
+     image_id: str,
+     payload: InspectionImageUpdate,
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> InspectionImageResponse:
+     inspection = session.get(Inspection, inspection_id)
+@@ -469,7 +469,7 @@
+     inspection_id: str,
+     image_id: str,
+     request: Request,
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> dict:
+     inspection = session.get(Inspection, inspection_id)
+@@ -516,7 +516,7 @@
+ @router.post("/{inspection_id}/submit", response_model=InspectionResponse)
+ def submit_inspection(
+     inspection_id: str,
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> InspectionResponse:
+     inspection = session.get(Inspection, inspection_id)
+@@ -563,7 +563,7 @@
+     image_id: str,
+     request: Request,
+     force: bool = Query(default=False, description="Force re-processing if already completed"),
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> ImageQualityResponse:
+     """
+@@ -595,7 +595,7 @@
+     inspection_id: str,
+     request: Request,
+     force: bool = Query(default=False, description="Force re-processing of all images"),
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> BatchProcessImagesResponse:
+     """
+@@ -717,7 +717,7 @@
+     image_id: str,
+     request: Request,
+     force: bool = Query(default=False, description="Force re-execution of OCR recognition"),
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> OCRRunResponse:
+     """
+@@ -746,7 +746,7 @@
+     inspection_id: str,
+     request: Request,
+     force: bool = Query(default=False, description="Force re-execution of OCR for all images"),
+-    current_user: User = Depends(require_role(Role.ADMIN, Role.INSPECTOR)),
++    current_user: User = Depends(require_role(Role.INSPECTOR)),
+     session: Session = Depends(get_session),
+ ) -> BatchOCRResponse:
+     """
+--- backend\app\context\service.py
++++ backend\app\context\service.py
+@@ -27,7 +27,7 @@
+         inspection=check_inspection_access(self.db,inspection_id,user)
+         if user.role==Role.INSPECTOR and inspection.created_by_user_id!=user.id:
+             raise HTTPException(404,"Inspection not found")
+-        if write and user.role not in {Role.ADMIN,Role.INSPECTOR}:
++        if write and user.role != Role.INSPECTOR:
+             raise HTTPException(403,"Not authorized to resolve context")
+         return inspection
+ 
+--- backend\app\extraction\service.py
++++ backend\app\extraction\service.py
+@@ -42,7 +42,7 @@
+ 
+     def run(self, inspection_id, user):
+         inspection = check_inspection_access(self.db, inspection_id, user)
+-        if user.role != Role.ADMIN and (user.role != Role.INSPECTOR or inspection.created_by_user_id != user.id):
++        if inspection.created_by_user_id != user.id:
+             raise HTTPException(403, "Not authorized to extract declarations")
+         latest, images, fingerprint = self.snapshot(inspection)
+         cached = self.current(inspection_id, user)
+--- backend\app\models\user.py
++++ backend\app\models\user.py
+@@ -9,9 +9,7 @@
+ 
+ 
+ class Role(str, Enum):
+-    ADMIN = "ADMIN"
+     INSPECTOR = "INSPECTOR"
+-    SUPERVISOR = "SUPERVISOR"
+ 
+ 
+ def utc_now():
+--- backend\app\reports\service.py
++++ backend\app\reports\service.py
+@@ -30,7 +30,7 @@
+         if not inspection:
+             raise HTTPException(404, "Inspection not found")
+         if user.role == Role.INSPECTOR and inspection.created_by_user_id != user.id:
+-            raise HTTPException(403, "Access restricted to assigned inspector or supervisor/admin")
++            raise HTTPException(403, "Access restricted to the inspection owner")
+         return inspection
+ 
+     def build_report_data(self, inspection_id: str, user: User) -> dict:
+--- backend\app\review\service.py
++++ backend\app\review\service.py
+@@ -32,9 +32,7 @@
+         if not inspection:
+             raise HTTPException(404, "Inspection not found")
+         if user.role == Role.INSPECTOR and inspection.created_by_user_id != user.id:
+-            raise HTTPException(403, "Access restricted to assigned inspector or supervisor/admin")
+-        if write and user.role == Role.SUPERVISOR:
+-            raise HTTPException(403, "Supervisors have read-only review access")
++            raise HTTPException(403, "Access restricted to the inspection owner")
+         return inspection
+ 
+     def _log_audit(
+@@ -75,8 +73,6 @@
+         if review:
+             return review
+ 
+-        if user.role == Role.SUPERVISOR:
+-            raise HTTPException(404, "No inspection review exists yet")
+ 
+         # Create new draft review
+         review = InspectionReview(
+@@ -272,8 +268,6 @@
+ 
+     def reopen_review(self, inspection_id: str, user: User, req: ReopenReviewRequest) -> InspectionReview:
+         self._get_inspection_with_access(inspection_id, user, write=True)
+-        if user.role != Role.ADMIN:
+-            raise HTTPException(403, "Only administrators can reopen a finalized inspection review")
+ 
+         review = self.get_or_create_review(inspection_id, user)
+         if review.status != "FINALIZED":
+--- backend\app\services\inspection.py
++++ backend\app\services\inspection.py
+@@ -28,16 +28,10 @@
+ 
+ 
+ def can_access_inspection(user: User, inspection: Inspection) -> bool:
+-    if user.role in {Role.ADMIN, Role.SUPERVISOR}:
+-        return True
+     return inspection.created_by_user_id == user.id or inspection.assigned_to_user_id == user.id
+ 
+ 
+ def can_modify_inspection(user: User, inspection: Inspection) -> bool:
+-    if user.role == Role.SUPERVISOR:
+-        return False
+-    if user.role == Role.ADMIN:
+-        return True
+     return inspection.created_by_user_id == user.id or inspection.assigned_to_user_id == user.id
+ 
+ 
+--- frontend\src\App.jsx
++++ frontend\src\App.jsx
+@@ -56,7 +56,7 @@
+     }
+   }, [])
+ 
+-  const canCreate = user && ['ADMIN', 'INSPECTOR'].includes(user.role)
++  const canCreate = user && ['INSPECTOR'].includes(user.role)
+ 
+   return (
+     <main>
+--- frontend\src\main.jsx
++++ frontend\src\main.jsx
+@@ -27,10 +27,10 @@
+               <Route path="/inspections/:id" element={<InspectionDetail />} />
+               <Route path="/reports" element={<ComingSoon title="Reports" />} />
+               <Route path="/forbidden" element={<ComingSoon title="Access restricted" forbidden />} />
+-              <Route element={<ProtectedRoute roles={['ADMIN', 'INSPECTOR']} />}>
++              <Route element={<ProtectedRoute roles={['INSPECTOR']} />}>
+                 <Route path="/inspections/new" element={<NewInspection />} />
+               </Route>
+-              <Route element={<ProtectedRoute roles={['ADMIN']} />}>
++              <Route element={<ProtectedRoute roles={['INSPECTOR']} />}>
+                 <Route path="/rules" element={<ComingSoon title="Rules repository" />} />
+                 <Route path="/users" element={<ComingSoon title="User administration" />} />
+               </Route>
+--- frontend\src\components\AppLayout.jsx
++++ frontend\src\components\AppLayout.jsx
+@@ -2,12 +2,12 @@
+ import { useAuth } from '../auth/AuthContext'
+ 
+ const navigation = [
+-  ['/dashboard', 'Dashboard', ['ADMIN', 'INSPECTOR', 'SUPERVISOR']],
+-  ['/inspections/new', 'New Inspection', ['ADMIN', 'INSPECTOR']],
+-  ['/inspections', 'Inspections', ['ADMIN', 'INSPECTOR', 'SUPERVISOR']],
+-  ['/reports', 'Reports', ['ADMIN', 'INSPECTOR', 'SUPERVISOR']],
+-  ['/rules', 'Rules', ['ADMIN']],
+-  ['/users', 'Users', ['ADMIN']],
++  ['/dashboard', 'Dashboard', ['INSPECTOR']],
++  ['/inspections/new', 'New Inspection', ['INSPECTOR']],
++  ['/inspections', 'Inspections', ['INSPECTOR']],
++  ['/reports', 'Reports', ['INSPECTOR']],
++  ['/rules', 'Rules', ['INSPECTOR']],
++  ['/users', 'Users', ['INSPECTOR']],
+ ]
+ 
+ export default function AppLayout() {
+--- frontend\src\components\ContextApplicability.jsx
++++ frontend\src\components\ContextApplicability.jsx
+@@ -19,7 +19,7 @@
+   const [error, setError] = useState('')
+   const [debug, setDebug] = useState(null)
+   const base = '/inspections/' + inspection.id
+-  const canResolve = user?.role === 'ADMIN' || (user?.role === 'INSPECTOR' && user.id === inspection.created_by_user_id)
++  const canResolve = user?.role === 'INSPECTOR' || (user?.role === 'INSPECTOR' && user.id === inspection.created_by_user_id)
+ 
+   async function load(signal) {
+     const response = await api.get(base + '/context', { signal })
+@@ -120,7 +120,7 @@
+         <h4 className="font-medium text-sm">{label(p.rule_key.replace('DECLARATION_', ''))} declaration</h4>
+         <p className="text-sm">{label(p.state)}</p><p className="text-xs text-stone-500">{p.reason}</p>
+       </article>)}</div>
+-      {user?.role === 'ADMIN' && <details className="mt-4"><summary onClick={() => { if (!debug) showDebug() }} className="cursor-pointer">Rule input snapshot (admin)</summary>
++      {user?.role === 'INSPECTOR' && <details className="mt-4"><summary onClick={() => { if (!debug) showDebug() }} className="cursor-pointer">Rule input snapshot (admin)</summary>
+         {debug && <pre className="text-xs overflow-auto max-h-96 whitespace-pre-wrap break-words">{JSON.stringify(debug, null, 2)}</pre>}
+       </details>}
+     </>}
+--- frontend\src\components\ExtractedDeclarations.jsx
++++ frontend\src\components\ExtractedDeclarations.jsx
+@@ -10,7 +10,7 @@
+   const [selected, setSelected] = useState(null)
+   const [selectedBlock, setSelectedBlock] = useState(null)
+   const base = '/inspections/' + inspection.id
+-  const canRun = user?.role === 'ADMIN' || (user?.role === 'INSPECTOR' && user.id === inspection.created_by_user_id)
++  const canRun = user?.role === 'INSPECTOR' || (user?.role === 'INSPECTOR' && user.id === inspection.created_by_user_id)
+ 
+   async function load(signal) {
+     const [list, report] = await Promise.all([
+--- frontend\src\components\HumanReviewWorkspace.jsx
++++ frontend\src\components\HumanReviewWorkspace.jsx
+@@ -67,7 +67,7 @@
+ 
+   const isFinalized = review?.status === 'FINALIZED'
+   const isSupervisor = user?.role === 'SUPERVISOR'
+-  const isAdmin = user?.role === 'ADMIN'
++  const isAdmin = user?.role === 'INSPECTOR'
+   const canEdit = !isFinalized && !isSupervisor
+ 
+   const handleSaveRuleDecision = async (ruleKey, ruleId, currentMachineVerdict) => {
+--- frontend\src\components\RuleComplianceEvaluation.jsx
++++ frontend\src\components\RuleComplianceEvaluation.jsx
+@@ -30,7 +30,7 @@
+   const [loadingExplanation, setLoadingExplanation] = useState(false)
+ 
+   const base = `/inspections/${inspection.id}`
+-  const canEvaluate = ['ADMIN', 'INSPECTOR'].includes(user?.role)
++  const canEvaluate = ['INSPECTOR'].includes(user?.role)
+ 
+   const fetchEvaluation = async () => {
+     setLoading(true)
+--- frontend\src\pages\InspectionDetail.jsx
++++ frontend\src\pages\InspectionDetail.jsx
+@@ -228,11 +228,11 @@
+   const isEditable =
+     inspection &&
+     ['DRAFT', 'EVIDENCE_UPLOADED'].includes(inspection.status) &&
+-    ['ADMIN', 'INSPECTOR'].includes(user?.role)
++    ['INSPECTOR'].includes(user?.role)
+ 
+   const canProcess =
+     inspection &&
+-    ['ADMIN', 'INSPECTOR'].includes(user?.role)
++    ['INSPECTOR'].includes(user?.role)
+ 
+   if (loading) {
+     return (
+--- frontend\src\pages\InspectionsList.jsx
++++ frontend\src\pages\InspectionsList.jsx
+@@ -63,7 +63,7 @@
+     }
+   }
+ 
+-  const canCreate = user && ['ADMIN', 'INSPECTOR'].includes(user.role)
++  const canCreate = user && ['INSPECTOR'].includes(user.role)
+ 
+   return (
+     <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6">

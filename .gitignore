@@ -1,0 +1,27 @@
+.env
+.venv/
+**/.venv/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.db
+*.sqlite
+*.sqlite3
+node_modules/
+**/node_modules/
+dist/
+backend/data/
+backend/*.log
+*.log
+scratch/
+
+# Flutter & Dart
+.dart_tool/
+**/.dart_tool/
+.pub-cache/
+**/.pub-cache/
+.pub/
+**/build/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies

@@ -1,0 +1,1 @@
+"""LabelSure independent API application."""

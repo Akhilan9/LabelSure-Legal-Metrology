@@ -1,0 +1,363 @@
+{
+  "ruleset_id": "labelsure_prototype",
+  "ruleset_version": "1",
+  "description": "Explicitly opt-in demonstration corpus. No verified statutory rules. Disabled examples are not evaluated.",
+  "rules": [
+    {
+      "rule_id": "DEMO-MRP_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "MRP_PRESENCE",
+      "title": "MRP PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MRP"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-NET_QUANTITY_STRUCTURE",
+      "rule_version": "1",
+      "rule_key": "NET_QUANTITY_STRUCTURE",
+      "title": "NET QUANTITY STRUCTURE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "net_quantity",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "NET_QUANTITY"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-MONTH_YEAR_STRUCTURE",
+      "rule_version": "1",
+      "rule_key": "MONTH_YEAR_STRUCTURE",
+      "title": "MONTH YEAR STRUCTURE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "month_year",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MONTH_YEAR"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-CONSUMER_CONTACT_DEMO",
+      "rule_version": "1",
+      "rule_key": "CONSUMER_CONTACT_DEMO",
+      "title": "CONSUMER CONTACT DEMO",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "any"
+      },
+      "required_declaration_types": [
+        "CONSUMER_CARE_PHONE",
+        "CONSUMER_CARE_EMAIL"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-IMPORTER_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "IMPORTER_PRESENCE",
+      "title": "IMPORTER PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.import_status",
+        "operator": "equals",
+        "value": "IMPORTED"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "IMPORTER_NAME"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": true,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-COMMON_NAME_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "COMMON_NAME_PRESENCE",
+      "title": "COMMON NAME PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "COMMON_PRODUCT_NAME"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": false,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-MANUFACTURER_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "MANUFACTURER_PRESENCE",
+      "title": "MANUFACTURER PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "MANUFACTURER_NAME",
+        "MANUFACTURER_ADDRESS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": false,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-PACKER_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "PACKER_PRESENCE",
+      "title": "PACKER PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.type",
+        "operator": "exists"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "PACKER_NAME",
+        "PACKER_ADDRESS"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": false,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    },
+    {
+      "rule_id": "DEMO-ORIGIN_PRESENCE",
+      "rule_version": "1",
+      "rule_key": "ORIGIN_PRESENCE",
+      "title": "ORIGIN PRESENCE",
+      "description": "Prototype demonstration criterion only. Not a verified statutory requirement.",
+      "legal_reference": "Prototype only — exact statutory applicability and clause require legal verification.",
+      "legal_status": "PROTOTYPE_RULE",
+      "effective_from": null,
+      "effective_to": null,
+      "applicability_conditions": {
+        "key": "package.import_status",
+        "operator": "equals",
+        "value": "IMPORTED"
+      },
+      "evaluation_conditions": {
+        "validator": "presence",
+        "composition": "all"
+      },
+      "required_declaration_types": [
+        "COUNTRY_OF_ORIGIN"
+      ],
+      "severity": "HIGH",
+      "evidence_requirements": {
+        "min_confidence": 0.85,
+        "allow_absence_failure": true,
+        "required_panels": [
+          "DECLARATION_PANEL"
+        ],
+        "accepted_quality": [
+          "GOOD",
+          "ACCEPTABLE"
+        ]
+      },
+      "uncertainty_behavior": "UNCERTAIN",
+      "enabled": false,
+      "verification_metadata": {
+        "scope": "Controlled prototype demonstration; not legally authoritative"
+      }
+    }
+  ]
+}
