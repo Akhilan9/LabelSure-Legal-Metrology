@@ -1466,6 +1466,7 @@ class _InspectionCenterPageState extends State<InspectionCenterPage> {
                   DataColumn(label: Text('COMMODITY / PRODUCT')),
                   DataColumn(label: Text('CATEGORY')),
                   DataColumn(label: Text('INTL. BAN STATUS')),
+                  DataColumn(label: Text('COLOR MARKS')),
                   DataColumn(label: Text('VERDICT')),
                   DataColumn(label: Text('VIOLATIONS DETECTED')),
                   DataColumn(label: Text('ACTIONS')),
@@ -1527,6 +1528,112 @@ class _InspectionCenterPageState extends State<InspectionCenterPage> {
                           ),
                         ),
                       )),
+                      DataCell(
+                        Builder(
+                          builder: (context) {
+                            final marks = (itm['detected_color_marks'] as List?)
+                                    ?.map((e) => e as Map<String, dynamic>)
+                                    .toList() ??
+                                [];
+                            if (marks.isEmpty) {
+                              return const Text('—', style: TextStyle(color: Color(0xFF64748B)));
+                            }
+                            return Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: marks.map((m) {
+                                final cType = m['mark_type']?.toString() ?? '';
+                                Color badgeColor;
+                                String label;
+                                Widget markIcon;
+
+                                if (cType == 'GREEN_VEG') {
+                                  badgeColor = AppTheme.emerald;
+                                  label = 'VEG';
+                                  markIcon = Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppTheme.emerald, width: 1.2),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 4,
+                                        height: 4,
+                                        decoration: const BoxDecoration(
+                                          color: AppTheme.emerald,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                } else if (cType == 'RED_BROWN_NON_VEG') {
+                                  badgeColor = const Color(0xFFE11D48);
+                                  label = 'NON-VEG';
+                                  markIcon = Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: const Color(0xFFE11D48), width: 1.2),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 4,
+                                        height: 4,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFE11D48),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                } else if (cType == 'YELLOW_WARNING') {
+                                  badgeColor = AppTheme.amber;
+                                  label = 'CAUTION';
+                                  markIcon = const Icon(Icons.warning_amber_rounded, size: 10, color: AppTheme.amber);
+                                } else if (cType == 'BLUE_FORTIFIED') {
+                                  badgeColor = AppTheme.cyan;
+                                  label = '+F';
+                                  markIcon = const Icon(Icons.verified, size: 10, color: AppTheme.cyan);
+                                } else {
+                                  badgeColor = Colors.white70;
+                                  label = m['color_name']?.toString() ?? 'MARK';
+                                  markIcon = const SizedBox.shrink();
+                                }
+
+                                return Tooltip(
+                                  message: '${m['color_name'] ?? ''} (${m['statutory_description'] ?? ''})\nConfidence: ${((m['confidence'] ?? 0.0) * 100).toInt()}%',
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: badgeColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        markIcon,
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: badgeColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ),
                       DataCell(Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(

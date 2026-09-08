@@ -40,6 +40,7 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
   String? _error;
   String? _notice;
   List<dynamic> _candidates = [];
+  List<dynamic> _colorMarks = [];
   bool _scanned = false;
   bool _webcamOpen = false;
 
@@ -116,9 +117,18 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
 
       await _refreshInspection();
 
+      List<dynamic> cMarks = [];
+      try {
+        final cRes = await ApiClient().get('/inspections/$id/color-marks');
+        if (cRes is Map<String, dynamic> && cRes['detected_color_marks'] is List) {
+          cMarks = cRes['detected_color_marks'] as List;
+        }
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _candidates = declRes is List ? declRes : [];
+          _colorMarks = cMarks;
           _scanned = true;
           _step = 2;
           _notice = _candidates.isNotEmpty
@@ -553,10 +563,9 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
           // Statutory Color & Dietary Label Marks
           Builder(
             builder: (context) {
-              final colorMarks = (_analysisResult?['detected_color_marks'] as List?)
-                      ?.map((e) => e as Map<String, dynamic>)
-                      .toList() ??
-                  [];
+              final colorMarks = _colorMarks
+                      .map((e) => e as Map<String, dynamic>)
+                      .toList();
               if (colorMarks.isEmpty) return const SizedBox.shrink();
 
               return Container(

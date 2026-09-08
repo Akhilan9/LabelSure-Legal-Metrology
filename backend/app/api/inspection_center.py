@@ -167,8 +167,11 @@ async def analyze_center_item(
     rule_verdict = "NON_COMPLIANT"
     violations_count = 0
 
+    detected_color_marks = []
     try:
         analysis_res = analyze(insp.id, request, session, current_user)
+        if isinstance(analysis_res, dict):
+            detected_color_marks = analysis_res.get("detected_color_marks", [])
         final_verdict = analysis_res.get("final_compliance_status", "NON_COMPLIANT")
         rule_verdict = "COMPLIANT" if final_verdict in ("COMPLIANT", "PASS") else "NON_COMPLIANT"
         eval_data = analysis_res.get("evaluation", {})
@@ -212,6 +215,7 @@ async def analyze_center_item(
         "violations_count": violations_count,
         "guideline_failure_justifications": failure_justifications,
         "international_ban_info": ban_info,
+        "detected_color_marks": detected_color_marks,
         "images_count": len(images_saved),
         "created_at": insp.created_at.isoformat(),
     }
@@ -247,6 +251,9 @@ def _build_consolidated_payload(payload: ConsolidatedReportRequest, user: User, 
                 justifications = generate_failure_justifications(["R-LMPC-RULE6-MFG"])
                 viols_list = ["[R-LMPC-RULE6-MFG]"]
 
+            from app.core.config import get_settings
+            from app.services.color_marks import scan_inspection_color_marks
+            cmarks = scan_inspection_color_marks(rec.id, get_settings().storage_local_dir)
             item_ban_info = check_international_bans(rec.product_name)
 
             items.append({
@@ -260,6 +267,7 @@ def _build_consolidated_payload(payload: ConsolidatedReportRequest, user: User, 
                 "violations": viols_list,
                 "failure_justifications": justifications,
                 "international_ban_info": item_ban_info,
+                "detected_color_marks": cmarks,
                 "created_at": rec.created_at.isoformat(),
             })
 
@@ -278,6 +286,8 @@ def _build_consolidated_payload(payload: ConsolidatedReportRequest, user: User, 
             "violations_count": d.get("violations_count") or 0,
             "violations": d.get("violations") or [],
             "failure_justifications": d.get("guideline_failure_justifications") or [],
+            "international_ban_info": d.get("international_ban_info"),
+            "detected_color_marks": d.get("detected_color_marks") or [],
             "created_at": d.get("created_at") or datetime.now(timezone.utc).isoformat(),
         })
 
