@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../core/theme.dart';
 
 class WebcamModal extends StatefulWidget {
@@ -21,17 +22,106 @@ class _WebcamModalState extends State<WebcamModal> {
   String _panel = 'FRONT';
   Uint8List? _previewBytes;
   String? _previewName;
+  bool _isCapturing = false;
+  String? _statusError;
 
-  Future<void> _pickFile() async {
-    final file = await FilePicker.pickFile(
-      type: FileType.image,
-    );
-    if (file != null) {
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _previewBytes = bytes;
-        _previewName = file.name;
-      });
+  @override
+  void initState() {
+    super.initState();
+    // Auto-launch device camera on modal open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _captureFromCamera();
+    });
+  }
+
+  Future<void> _captureFromCamera() async {
+    setState(() {
+      _isCapturing = true;
+      _statusError = null;
+    });
+
+    try {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
+        imageQuality: 92,
+      );
+
+      if (photo != null) {
+        final bytes = await photo.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _previewBytes = bytes;
+            _previewName = photo.name.isNotEmpty ? photo.name : 'camera_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            _isCapturing = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isCapturing = false);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCapturing = false;
+          _statusError = 'Camera error: $e. You can choose a photo from the gallery instead.';
+        });
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    setState(() {
+      _isCapturing = true;
+      _statusError = null;
+    });
+
+    try {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+      );
+
+      if (photo != null) {
+        final bytes = await photo.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _previewBytes = bytes;
+            _previewName = photo.name.isNotEmpty ? photo.name : 'gallery_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            _isCapturing = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback to FilePicker if ImagePicker gallery encounters any platform issue
+    try {
+      final file = await FilePicker.pickFile(type: FileType.image);
+      if (file != null) {
+        final bytes = await file.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _previewBytes = bytes;
+            _previewName = file.name;
+            _isCapturing = false;
+          });
+        }
+        return;
+      }
+    } catch (err) {
+      if (mounted) {
+        setState(() {
+          _statusError = 'Failed to pick photo: $err';
+        });
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isCapturing = false);
     }
   }
 
@@ -58,9 +148,22 @@ class _WebcamModalState extends State<WebcamModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Package Evidence Scanner',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0x3310B981),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: AppTheme.emerald, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Package Camera Scanner',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -69,6 +172,22 @@ class _WebcamModalState extends State<WebcamModal> {
               ],
             ),
             const SizedBox(height: 12),
+
+            if (_statusError != null) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0x33F43F5E),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.rose),
+                ),
+                child: Text(
+                  _statusError!,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFFFECDD3)),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
 
             // Viewfinder / Reticle Frame
             Container(
@@ -82,42 +201,92 @@ class _WebcamModalState extends State<WebcamModal> {
                 alignment: Alignment.center,
                 children: [
                   if (_previewBytes != null)
-                    Image.memory(_previewBytes!, fit: BoxFit.contain)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Image.memory(_previewBytes!, fit: BoxFit.contain, width: double.infinity, height: double.infinity),
+                    )
+                  else if (_isCapturing)
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircularProgressIndicator(color: AppTheme.emerald),
+                        SizedBox(height: 14),
+                        Text('Opening Camera...', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    )
                   else
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.camera_alt, size: 48, color: Color(0xFF475569)),
+                        const Icon(Icons.camera_alt, size: 52, color: Color(0xFF475569)),
                         const SizedBox(height: 12),
                         const Text(
-                          'Align package label inside the guide frame.',
+                          'Align package label inside the camera frame.',
                           style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                         ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E293B),
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.photo_library, size: 16),
-                          label: const Text('Select / Snap Photo', style: TextStyle(fontSize: 11)),
-                          onPressed: _pickFile,
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 10,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.emerald,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                              icon: const Icon(Icons.camera, size: 16),
+                              label: const Text('📸 Take Photo with Camera', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              onPressed: _captureFromCamera,
+                            ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Color(0xFF334155)),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              ),
+                              icon: const Icon(Icons.photo_library, size: 16),
+                              label: const Text('Choose from Gallery', style: TextStyle(fontSize: 11)),
+                              onPressed: _pickFromGallery,
+                            ),
+                          ],
                         ),
                       ],
                     ),
 
-                  // Green Alignment Reticle Box
-                  Container(
-                    margin: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.emerald, width: 2),
-                      borderRadius: BorderRadius.circular(8),
+                  // Alignment Reticle Box
+                  IgnorePointer(
+                    child: Container(
+                      margin: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.emerald.withValues(alpha: 0.7), width: 1.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 14),
+
+            if (_previewBytes != null) ...[
+              Row(
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.refresh, size: 14, color: AppTheme.emerald),
+                    label: const Text('Retake with Camera', style: TextStyle(fontSize: 11, color: AppTheme.emerald)),
+                    onPressed: _captureFromCamera,
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.photo_library, size: 14, color: Color(0xFF94A3B8)),
+                    label: const Text('Choose Different Photo', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                    onPressed: _pickFromGallery,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
 
             Row(
               children: [

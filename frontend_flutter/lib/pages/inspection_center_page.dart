@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -1804,6 +1805,9 @@ class _SequentialScannerDialogState extends State<_SequentialScannerDialog> {
   void initState() {
     super.initState();
     _currentItemIndex = widget.itemIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _captureCamera();
+    });
   }
 
   @override
@@ -1813,7 +1817,44 @@ class _SequentialScannerDialogState extends State<_SequentialScannerDialog> {
     super.dispose();
   }
 
+  Future<void> _captureCamera() async {
+    try {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
+        imageQuality: 92,
+      );
+      if (photo != null) {
+        final b = await photo.readAsBytes();
+        setState(() {
+          _capturedBytes = b;
+          _capturedFilename = photo.name.isNotEmpty ? photo.name : 'commodity_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          if (_productNameCtrl.text.isEmpty) {
+            _productNameCtrl.text = _capturedFilename!.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _pickImage() async {
+    try {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+      if (photo != null) {
+        final b = await photo.readAsBytes();
+        setState(() {
+          _capturedBytes = b;
+          _capturedFilename = photo.name.isNotEmpty ? photo.name : 'item_photo.jpg';
+          if (_productNameCtrl.text.isEmpty) {
+            _productNameCtrl.text = _capturedFilename!.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+          }
+        });
+        return;
+      }
+    } catch (_) {}
+
     try {
       final file = await FilePicker.pickFile(type: FileType.image);
       if (file != null) {
@@ -1950,34 +1991,70 @@ class _SequentialScannerDialogState extends State<_SequentialScannerDialog> {
                 alignment: Alignment.center,
                 children: [
                   if (_capturedBytes != null)
-                    Image.memory(_capturedBytes!, fit: BoxFit.contain)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(9),
+                      child: Image.memory(_capturedBytes!, fit: BoxFit.contain, width: double.infinity, height: double.infinity),
+                    )
                   else
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.camera_alt, size: 42, color: Color(0xFF475569)),
+                        const Icon(Icons.camera_alt, size: 44, color: Color(0xFF475569)),
                         const SizedBox(height: 8),
                         const Text('Align package label inside view finder', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                        const SizedBox(height: 10),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B), foregroundColor: Colors.white),
-                          icon: const Icon(Icons.add_a_photo, size: 15),
-                          label: const Text('Capture / Snap Photo', style: TextStyle(fontSize: 11)),
-                          onPressed: _pickImage,
+                        const SizedBox(height: 12),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 10,
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.emerald, foregroundColor: Colors.black),
+                              icon: const Icon(Icons.camera_alt, size: 15),
+                              label: const Text('📸 Open Camera', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              onPressed: _captureCamera,
+                            ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Color(0xFF334155))),
+                              icon: const Icon(Icons.photo_library, size: 15),
+                              label: const Text('Browse Files', style: TextStyle(fontSize: 11)),
+                              onPressed: _pickImage,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  Container(
-                    margin: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.emerald.withValues(alpha: 0.8), width: 1.5),
-                      borderRadius: BorderRadius.circular(6),
+                  IgnorePointer(
+                    child: Container(
+                      margin: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.emerald.withValues(alpha: 0.8), width: 1.5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            if (_capturedBytes != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.refresh, size: 13, color: AppTheme.emerald),
+                    label: const Text('Retake with Camera', style: TextStyle(fontSize: 11, color: AppTheme.emerald)),
+                    onPressed: _captureCamera,
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.photo_library, size: 13, color: Color(0xFF94A3B8)),
+                    label: const Text('Choose Different File', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                    onPressed: _pickImage,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
 
             // Metadata inputs
             Row(

@@ -327,11 +327,22 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.emerald,
                         foregroundColor: const Color(0xFF090D16),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.camera_alt, size: 18),
+                      label: const Text('📸 Open Camera Scanner', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      onPressed: () => setState(() => _webcamOpen = true),
+                    ),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF334155)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       icon: const Icon(Icons.photo_library, size: 16),
-                      label: const Text('Browse Files', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      label: const Text('Browse Files', style: TextStyle(fontSize: 12)),
                       onPressed: () async {
                         final files = await FilePicker.pickFiles(
                           type: FileType.image,
@@ -345,17 +356,6 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                           _uploadFiles(fileItems);
                         }
                       },
-                    ),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFF334155)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      icon: const Icon(Icons.camera_alt, size: 16),
-                      label: const Text('📷 Open Camera Scanner', style: TextStyle(fontSize: 11)),
-                      onPressed: () => setState(() => _webcamOpen = true),
                     ),
                   ],
                 ),
