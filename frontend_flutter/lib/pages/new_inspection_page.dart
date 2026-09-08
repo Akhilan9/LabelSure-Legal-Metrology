@@ -43,6 +43,7 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
   List<dynamic> _colorMarks = [];
   bool _scanned = false;
   bool _webcamOpen = false;
+  String _webcamPanel = 'FRONT';
 
   @override
   void initState() {
@@ -75,9 +76,9 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
     }
   }
 
-  Future<void> _uploadFiles(List<({String filename, Uint8List bytes, String panelType})> files) async {
+  Future<void> _uploadFiles(List<({String filename, Uint8List bytes, String panelType})> files, {bool autoScan = false}) async {
     setState(() {
-      _busyMessage = 'Uploading photos…';
+      _busyMessage = 'Uploading ${files.length} photo(s)…';
       _error = null;
       _notice = null;
     });
@@ -93,11 +94,49 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
       final id = _inspection!['id'];
       await ApiClient().uploadFiles('/inspections/$id/images', files: files);
       await _refreshInspection();
-      await _scan(id);
+
+      if (autoScan) {
+        await _scan(id);
+      } else {
+        final images = (_inspection?['images'] as List?) ?? [];
+        final hasFront = images.any((i) => (i['panel_type'] ?? '').toString().toUpperCase() == 'FRONT');
+        final hasBack = images.any((i) => (i['panel_type'] ?? '').toString().toUpperCase() == 'BACK');
+        setState(() {
+          if (hasFront && hasBack) {
+            _notice = 'Both Front and Back photos uploaded! Tap "Scan Both Panels & Extract Details (OCR)" to begin.';
+          } else if (!hasBack) {
+            _notice = 'Front photo saved. Next, upload or capture the Back / MRP panel photo to extract all mandatory LMPC details.';
+          } else {
+            _notice = '${images.length} photo(s) saved. You can add more panels or scan both panels now.';
+          }
+        });
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _busyMessage = null);
+    }
+  }
+
+  Future<void> _pickFilesForPanel(String panel) async {
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isNotEmpty) {
+      final bytes = await files.first.readAsBytes();
+      await _uploadFiles([(filename: files.first.name, bytes: bytes, panelType: panel)]);
+    }
+  }
+
+  Future<void> _pickMultipleFiles() async {
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isNotEmpty) {
+      final List<({String filename, Uint8List bytes, String panelType})> fileItems = [];
+      for (int i = 0; i < files.length; i++) {
+        final f = files[i];
+        final bytes = await f.readAsBytes();
+        final panel = (i == 0 && files.length > 1) ? 'FRONT' : (i == 1 ? 'BACK' : 'FRONT');
+        fileItems.add((filename: f.name, bytes: bytes, panelType: panel));
+      }
+      await _uploadFiles(fileItems);
     }
   }
 
@@ -248,8 +287,10 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
 
         if (_webcamOpen)
           WebcamModal(
+            initialPanel: _webcamPanel,
             onClose: () => setState(() => _webcamOpen = false),
             onCapture: (name, bytes, panel) {
+              setState(() => _webcamOpen = false);
               _uploadFiles([(filename: name, bytes: bytes, panelType: panel)]);
             },
           ),
@@ -261,24 +302,37 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
   }
 
   Widget _buildStepBadge(int stepNum, String title, bool active) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: active ? AppTheme.emerald : const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: active ? const Color(0xFF090D16) : const Color(0xFF94A3B8),
+    return InkWell(
+      onTap: () {
+        setState(() => _step = stepNum);
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: active ? AppTheme.emerald : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: active ? AppTheme.emerald : const Color(0xFF334155)),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: active ? const Color(0xFF090D16) : const Color(0xFF94A3B8),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildStep1Photos(List<dynamic> images) {
+    final frontImages = images.where((i) => (i['panel_type'] ?? '').toString().toUpperCase() == 'FRONT').toList();
+    final backImages = images.where((i) => (i['panel_type'] ?? '').toString().toUpperCase() == 'BACK').toList();
+    final hasFront = frontImages.isNotEmpty;
+    final hasBack = backImages.isNotEmpty;
+    final canScan = images.isNotEmpty;
+
     return Container(
       decoration: AppTheme.glassPanel(),
       padding: const EdgeInsets.all(24),
@@ -287,86 +341,175 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
         children: [
           const Center(
             child: Text(
-              'Start with Package Evidence Photos',
+              'Package Evidence Photos (Front & Back)',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
           const SizedBox(height: 4),
           const Center(
             child: Text(
-              'Photograph the commodity packaging or upload label images. PaddleOCR will scan all text and extract Rule 6 declarations.',
-              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+              'Capture both Front (Brand & Name) and Back (MRP & Declarations) panels so OCR extracts all statutory details.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
               textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(height: 20),
 
-          // Upload Area Box
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF334155), style: BorderStyle.solid),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.emerald),
-                const SizedBox(height: 12),
-                const Text('Choose package photos to upload',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 4),
-                const Text('Supports JPEG, PNG, WEBP up to 20MB per photo',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.emerald,
-                        foregroundColor: const Color(0xFF090D16),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      icon: const Icon(Icons.camera_alt, size: 18),
-                      label: const Text('📸 Open Camera Scanner', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      onPressed: () => setState(() => _webcamOpen = true),
-                    ),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFF334155)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      icon: const Icon(Icons.photo_library, size: 16),
-                      label: const Text('Browse Files', style: TextStyle(fontSize: 12)),
-                      onPressed: () async {
-                        final files = await FilePicker.pickFiles(
-                          type: FileType.image,
-                        );
-                        if (files.isNotEmpty) {
-                          final List<({String filename, Uint8List bytes, String panelType})> fileItems = [];
-                          for (final f in files) {
-                            final bytes = await f.readAsBytes();
-                            fileItems.add((filename: f.name, bytes: bytes, panelType: 'FRONT'));
-                          }
-                          _uploadFiles(fileItems);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+          // Dual-Slot Panel Capture Cards
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 650;
+              final slotWidth = isWide ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
 
-          // Uploaded Photos Grid
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  // FRONT PANEL SLOT
+                  SizedBox(
+                    width: slotWidth,
+                    child: _buildPanelSlotCard(
+                      title: '1. Front Panel (Brand & Name)',
+                      subtitle: 'Product name, Brand logo, Veg / Non-Veg emblem',
+                      panelType: 'FRONT',
+                      icon: Icons.aspect_ratio_rounded,
+                      images: frontImages,
+                      onCaptureCamera: () => setState(() {
+                        _webcamPanel = 'FRONT';
+                        _webcamOpen = true;
+                      }),
+                      onBrowseFile: () => _pickFilesForPanel('FRONT'),
+                    ),
+                  ),
+
+                  // BACK PANEL SLOT
+                  SizedBox(
+                    width: slotWidth,
+                    child: _buildPanelSlotCard(
+                      title: '2. Back / MRP Panel (Statutory Info)',
+                      subtitle: 'MRP, USP, Net Qty, Mfg/Exp Dates, Address, FSSAI',
+                      panelType: 'BACK',
+                      icon: Icons.receipt_long_rounded,
+                      images: backImages,
+                      onCaptureCamera: () => setState(() {
+                        _webcamPanel = 'BACK';
+                        _webcamOpen = true;
+                      }),
+                      onBrowseFile: () => _pickFilesForPanel('BACK'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Secondary multi-upload actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFCBD5E1),
+                  side: const BorderSide(color: Color(0xFF334155)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.library_add_outlined, size: 16),
+                label: const Text('Browse Multiple Photos at Once', style: TextStyle(fontSize: 11)),
+                onPressed: _pickMultipleFiles,
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFCBD5E1),
+                  side: const BorderSide(color: Color(0xFF334155)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.add_photo_alternate_outlined, size: 16),
+                label: const Text('Add Side / Other Panel', style: TextStyle(fontSize: 11)),
+                onPressed: () => _pickFilesForPanel('OTHER'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Scan Action Banner
+          if (canScan) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: hasFront && hasBack
+                      ? [const Color(0x3310B981), const Color(0x1110B981)]
+                      : [const Color(0x33F59E0B), const Color(0x11F59E0B)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: hasFront && hasBack ? AppTheme.emerald : AppTheme.amber,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    hasFront && hasBack ? Icons.check_circle_outline : Icons.info_outline,
+                    color: hasFront && hasBack ? AppTheme.emerald : AppTheme.amber,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hasFront && hasBack
+                              ? 'Both Front & Back Panels Loaded (${images.length} photos ready)'
+                              : '${images.length} Photo(s) Uploaded · ${!hasBack ? "Back panel recommended" : "Front panel recommended"}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: hasFront && hasBack ? AppTheme.emerald : AppTheme.amber,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hasFront && hasBack
+                              ? 'PaddleOCR will scan all photos together and extract statutory details across both panels.'
+                              : 'Tip: Adding both panels ensures complete statutory compliance (MRP, Net Qty, Dates, Address, Helpline).',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFFCBD5E1)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.emerald,
+                      foregroundColor: const Color(0xFF090D16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 4,
+                    ),
+                    icon: const Icon(Icons.document_scanner, size: 18),
+                    label: Text(
+                      _scanned
+                          ? 'Re-scan Evidence (OCR) →'
+                          : (images.length > 1 ? 'Scan Both Panels & Extract (OCR) →' : 'Scan Photos & Extract (OCR) →'),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () => _scan(_inspection!['id']),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Uploaded Photos Management Grid
           if (images.isNotEmpty) ...[
-            Text('Uploaded Package Evidence (${images.length})',
+            Text('All Uploaded Evidence Photos (${images.length})',
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 12),
             Wrap(
@@ -431,20 +574,154 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.emerald,
-                  foregroundColor: const Color(0xFF090D16),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPanelSlotCard({
+    required String title,
+    required String subtitle,
+    required String panelType,
+    required IconData icon,
+    required List<dynamic> images,
+    required VoidCallback onCaptureCamera,
+    required VoidCallback onBrowseFile,
+  }) {
+    final isLoaded = images.isNotEmpty;
+    final primaryImg = isLoaded ? images.first as Map<String, dynamic> : null;
+    final primaryImgId = primaryImg?['id'];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isLoaded ? AppTheme.emerald.withValues(alpha: 0.7) : const Color(0xFF334155),
+          width: isLoaded ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: isLoaded ? AppTheme.emerald : const Color(0xFF94A3B8)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                onPressed: () => _scan(_inspection!['id']),
-                child: Text(_scanned ? 'Scan Again' : 'Scan Photos & Extract →',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               ),
+              if (isLoaded)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.emerald.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('READY ✓', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.emerald)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          const SizedBox(height: 12),
+
+          if (isLoaded && primaryImgId != null && _inspection != null) ...[
+            SizedBox(
+              height: 140,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: AuthorizedImage(
+                  src: '/inspections/${_inspection!['id']}/images/$primaryImgId/content',
+                  alt: primaryImg?['original_filename']?.toString(),
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF334155)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    icon: const Icon(Icons.camera_alt, size: 14),
+                    label: const Text('Retake Camera', style: TextStyle(fontSize: 11)),
+                    onPressed: onCaptureCamera,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF334155)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    icon: const Icon(Icons.photo_library, size: 14),
+                    label: const Text('Replace File', style: TextStyle(fontSize: 11)),
+                    onPressed: onBrowseFile,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Container(
+              height: 140,
+              decoration: BoxDecoration(
+                color: const Color(0xFF090D16),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF1E293B)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 36, color: const Color(0xFF475569)),
+                  const SizedBox(height: 8),
+                  Text('No $panelType photo added yet', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: panelType == 'FRONT' ? AppTheme.emerald : const Color(0xFF0284C7),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.camera_alt, size: 14),
+                    label: const Text('Camera', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: onCaptureCamera,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF334155)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.upload_file, size: 14),
+                    label: const Text('Browse', style: TextStyle(fontSize: 11)),
+                    onPressed: onBrowseFile,
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -472,14 +749,28 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                       style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
                 ],
               ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xFF334155)),
-                ),
-                icon: const Icon(Icons.refresh, size: 14),
-                label: const Text('Scan Photos Again', style: TextStyle(fontSize: 11)),
-                onPressed: () => _scan(_inspection!['id']),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF334155)),
+                    ),
+                    icon: const Icon(Icons.add_photo_alternate, size: 14),
+                    label: const Text('Add / Retake Photos', style: TextStyle(fontSize: 11)),
+                    onPressed: () => setState(() => _step = 1),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.emerald,
+                      foregroundColor: const Color(0xFF090D16),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 14),
+                    label: const Text('Scan Photos Again', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () => _scan(_inspection!['id']),
+                  ),
+                ],
               ),
             ],
           ),
@@ -776,43 +1067,84 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
           ),
           const SizedBox(height: 20),
 
-          // Bottom Step Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xFF334155)),
-                ),
-                onPressed: () => setState(() => _step = 1),
-                child: const Text('← Add or Retake Photos', style: TextStyle(fontSize: 11)),
-              ),
-              Row(
+          // Bottom Step Actions - Mobile Responsive Stack
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Color(0xFF334155)),
-                    ),
-                    onPressed: () => context.go('/inspections'),
-                    child: const Text('Save Draft & Exit', style: TextStyle(fontSize: 11)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Color(0xFF334155)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isMobile ? 8 : 14,
+                              vertical: isMobile ? 12 : 12,
+                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.arrow_back, size: 14),
+                          label: Text(
+                            isMobile ? 'Retake Photos' : 'Add or Retake Photos',
+                            style: TextStyle(fontSize: isMobile ? 11 : 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onPressed: () => setState(() => _step = 1),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF94A3B8),
+                            side: const BorderSide(color: Color(0xFF334155)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isMobile ? 8 : 14,
+                              vertical: isMobile ? 12 : 12,
+                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () => context.go('/inspections'),
+                          child: Text(
+                            'Save Draft & Exit',
+                            style: TextStyle(fontSize: isMobile ? 11 : 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.emerald,
-                      foregroundColor: const Color(0xFF090D16),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.emerald,
+                        foregroundColor: const Color(0xFF090D16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 4,
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      onPressed: images.isNotEmpty ? _submitAndAnalyze : null,
+                      label: Text(
+                        isMobile
+                            ? 'Submit & Run Automated Analysis →'
+                            : 'Submit & Run Full Automated Analysis →',
+                        style: TextStyle(fontSize: isMobile ? 12 : 13, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    onPressed: images.isNotEmpty ? _submitAndAnalyze : null,
-                    child: const Text('Submit & Run Full Automated Analysis →',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
+                  SizedBox(height: isMobile ? 36 : 24),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ],
       ),

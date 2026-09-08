@@ -29,7 +29,8 @@ def quantity(number, unit):
     return {"numeric_value": format(value.normalize(), "f"), "unit": UNITS[unit.lower()]}
 
 def month_year(value):
-    match_3 = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})", value.strip())
+    val = value.strip().replace(".", "/")
+    match_3 = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})", val)
     if match_3:
         p1, p2, p3 = int(match_3[1]), int(match_3[2]), match_3[3]
         year = int(p3) if len(p3) == 4 else (2000 + int(p3))
@@ -40,20 +41,29 @@ def month_year(value):
         if 1 <= p1 <= 12 and 1 <= p2 <= 12:
             return {"day": p1, "month": p2, "year": year}, True
         return {}, True
-    match = re.fullmatch(r"(\d{1,2})[/-](\d{2}|\d{4})", value.strip())
+    match = re.fullmatch(r"(\d{1,2})[/-](\d{2}|\d{4})", val)
     if match:
-        month, year = map(int, match.groups())
+        month = int(match[1])
+        y_str = match[2]
         if not 1 <= month <= 12:
             return {}, True
-        # A two-digit year has an unresolved century.
-        return {"month": month, "year": year if len(match[2]) == 4 else None, "year_text": match[2]}, len(match[2]) == 2
-    match = re.fullmatch(r"([A-Za-z]{3,9})\s+(\d{4})", value.strip())
+        year = int(y_str) if len(y_str) == 4 else (2000 + int(y_str))
+        return {"month": month, "year": year, "year_text": y_str}, len(y_str) == 2
+    match = re.fullmatch(r"([A-Za-z0-9]{3,9})\s*(\d{2,4})", val)
     if match:
-        months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-        full = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+        months_map = {
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            "dct": 10, "dce": 12, "au6": 8, "jui": 7, "0ct": 10, "1an": 1,
+            "january": 1, "february": 2, "march": 3, "april": 4, "june": 6,
+            "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+        }
         name = match[1].lower()
-        if name in months or name in full:
-            return {"month": months.index(name[:3]) + 1, "year": int(match[2])}, False
+        m_num = months_map.get(name) or months_map.get(name[:3])
+        if m_num:
+            y_str = match[2]
+            year = int(y_str) if len(y_str) == 4 else (2000 + int(y_str))
+            return {"month": m_num, "year": year, "year_text": y_str}, len(y_str) == 2
     return {}, True
 
 def valid_gtin(value):

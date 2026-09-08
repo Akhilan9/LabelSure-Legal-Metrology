@@ -8,10 +8,13 @@ class WebcamModal extends StatefulWidget {
   final void Function(String filename, Uint8List bytes, String panel) onCapture;
   final VoidCallback onClose;
 
+  final String initialPanel;
+
   const WebcamModal({
     super.key,
     required this.onCapture,
     required this.onClose,
+    this.initialPanel = 'FRONT',
   });
 
   @override
@@ -19,7 +22,7 @@ class WebcamModal extends StatefulWidget {
 }
 
 class _WebcamModalState extends State<WebcamModal> {
-  String _panel = 'FRONT';
+  late String _panel;
   Uint8List? _previewBytes;
   String? _previewName;
   bool _isCapturing = false;
@@ -28,6 +31,7 @@ class _WebcamModalState extends State<WebcamModal> {
   @override
   void initState() {
     super.initState();
+    _panel = widget.initialPanel;
     // Auto-launch device camera on modal open
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _captureFromCamera();

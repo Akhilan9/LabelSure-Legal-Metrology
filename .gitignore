@@ -11,6 +11,9 @@ node_modules/
 **/node_modules/
 dist/
 backend/data/
+backend/storage/
+storage/
+**/storage/
 backend/*.log
 *.log
 scratch/

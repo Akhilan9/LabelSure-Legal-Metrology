@@ -30,13 +30,39 @@ def extract(blocks, panel, product_name=None):
     for block in blocks:
         text_raw = block.raw_text
         text_cln = clean(text_raw)
-        if p.CARE.search(text_cln) or re.search(r"customercare|consumer\s+helpline|for\s+feedback|consumer\s+care|addressabore|address\s+above|consumer|customer", text_cln, re.I):
+        if p.CARE.search(text_cln) or re.search(r"customercare|consumer\s+helpline|for\s+feedback|consumer\s+care|addressabore|address\s+above|consumer|customer|toll\s*free|tol\s*free|helpline|call\s+us|care\b", text_cln, re.I):
             for match in p.EMAIL.finditer(text_raw):
                 emit("CONSUMER_CARE_EMAIL", [block], match[0].lower())
             for match in p.PHONE.finditer(text_raw):
                 digits = re.sub(r"\D", "", match[1])
                 if 7 <= len(digits) <= 15:
                     emit("CONSUMER_CARE_PHONE", [block], ("+" if match[1].startswith("+") else "") + digits)
+        # Any block containing a 1800 toll-free number or customer care phone
+        match1800 = re.search(r"\b1800[- ]?\d{3}[- ]?\d{3,4}\b|\b1800\s*\d{6,7}\b", text_raw)
+        if match1800:
+            digits = re.sub(r"\D", "", match1800[0])
+            emit("CONSUMER_CARE_PHONE", [block], digits, heuristic=True)
+
+        # Global Compound Price (e.g. 45.00/0.2259079 or 57.00(31.71/g))
+        cp = p.COMPOUND_PRICE.search(text_cln)
+        if cp:
+            raw_mrp = cp[1] or cp[4]
+            raw_usp = cp[2] or cp[5]
+            mrp_val = money(raw_mrp) if raw_mrp else None
+            if mrp_val:
+                emit("MRP", [block], mrp_val["amount"], mrp_val, heuristic=True)
+            usp_val = money(raw_usp) if raw_usp else None
+            if usp_val:
+                unit_u = cp[3] or cp[6] or "g"
+                emit("UNIT_SALE_PRICE", [block], f"{usp_val['amount']}/{unit_u}", {"amount": usp_val["amount"], "per_unit": unit_u, "per_quantity": "1"}, heuristic=True)
+
+        # FSSAI License Number detection
+        fssai_match = p.FSSAI.search(text_cln)
+        if not fssai_match and re.search(r"\b(?:lic|fssai)\b", text_cln, re.I):
+            fssai_match = p.STANDALONE_FSSAI.search(text_cln)
+        if fssai_match:
+            lic_num = fssai_match[1]
+            emit("OTHER", [block], f"FSSAI Lic. No. {lic_num}", {"type": "FSSAI_LICENSE", "license_number": lic_num}, heuristic=True)
 
     # Document-Level Sliding Window Concatenation Pass with Spatial Proximity Check
     def block_pos(b):
@@ -56,9 +82,22 @@ def extract(blocks, panel, product_name=None):
                 continue
 
             first_text = clean(window_src[0].raw_text)
-            if p.BOUNDARY.search(first_text) and not any(pat.search(first_text) for pat in [p.MRP, p.QUANTITY, p.DATE, p.GTIN]):
-                joined_text = " ".join(clean(b.raw_text) for b in window_src)
+            joined_text = " ".join(clean(b.raw_text) for b in window_src)
 
+            # Check Expiry in sliding window (e.g. BEST BEFORE in block 0, JUL 2026 in block 1)
+            if re.search(r"\b(?:best\s*before|use\s*by|expiry|exp(?:\.|\s*dt)?|expires?)\b", first_text, re.I):
+                for match in p.DATE.finditer(joined_text):
+                    data, review = month_year(match[1])
+                    value = f'{data["year"]:04d}-{data["month"]:02d}' if data.get("year") else match[1]
+                    emit("EXPIRY_DATE", window_src, value, data, review=review)
+                for match in p.EXPIRY.finditer(joined_text):
+                    emit("EXPIRY_DATE", window_src, match[1], heuristic=True)
+
+            # Check Postal Address in sliding window
+            if p.POSTAL_ADDRESS.search(joined_text):
+                emit("MANUFACTURER_ADDRESS", window_src, joined_text, heuristic=True)
+
+            if p.BOUNDARY.search(first_text) and not any(pat.search(first_text) for pat in [p.MRP, p.QUANTITY, p.DATE, p.GTIN]):
                 # MRP in window
                 for match in p.MRP.finditer(joined_text):
                     data = money(match[1])
@@ -80,9 +119,10 @@ def extract(blocks, panel, product_name=None):
                 # Organization / Manufacturer in window
                 org_w = p.ORG.search(joined_text)
                 if org_w:
-                    role = "MANUFACTURER" if re.search(r"manufactured|mfd|mfg|gujarat", org_w[1], re.I) else "PACKER" if re.search(r"packed|pkd", org_w[1], re.I) else "IMPORTER"
+                    role = "MANUFACTURER" if re.search(r"manufactured|mfd|mfg|mid|mig|gujarat|actured", org_w[1], re.I) else "PACKER" if re.search(r"packed|pkd", org_w[1], re.I) else "IMPORTER"
                     tail = joined_text[org_w.end():].strip()
-                    if tail and re.search(r"[A-Za-z]{2}", tail):
+                    tail = re.sub(r"^/(?:FabriquePar|Fabrique|Mfd)[^:]*:\s*", "", tail, flags=re.I)
+                    if tail and re.search(r"[A-Za-z]{2}", tail) and not re.search(r"^(?:unit\s+address|read\s+the|see\s+below)", tail, re.I):
                         parts = re.split(r",\s*(?=\d)", tail, maxsplit=1)
                         emit(role + "_NAME", window_src, parts[0], heuristic=True)
                         if len(parts) > 1:
@@ -135,18 +175,19 @@ def extract(blocks, panel, product_name=None):
                             emit(kind, sources, data["amount"] + "/" + (match[2] or "") + data["per_unit"], data)
         org = p.ORG.search(text)
         if org:
-            role = "MANUFACTURER" if re.search(r"manufactur\w*|manuta\w*|mfd|mfg|marketed", org[1], re.I) else "PACKER" if re.search(r"packed|pkd", org[1], re.I) else "IMPORTER"
+            role = "MANUFACTURER" if re.search(r"manufactur\w*|manuta\w*|mfd|mfg|mid|mig|actured|marketed|mktd", org[1], re.I) else "PACKER" if re.search(r"packed|pkd", org[1], re.I) else "IMPORTER"
             tail = text[org.end():].strip()
+            tail = re.sub(r"^/(?:FabriquePar|Fabrique|Mfd)[^:]*:\s*", "", tail, flags=re.I)
             name_sources = [block]
             address_blocks = group[1:]
             if not tail and len(group) > 1:
                 tail = clean(group[1].raw_text)
+                tail = re.sub(r"^/(?:FabriquePar|Fabrique|Mfd)[^:]*:\s*", "", tail, flags=re.I)
                 name_sources = group[:2]
                 address_blocks = group[2:]
-            if tail and re.search(r"[A-Za-z]{2}", tail):
-                # Separate explicit comma-delimited organization/address when possible.
+            if tail and re.search(r"[A-Za-z]{2}", tail) and not re.search(r"^(?:unit\s+address|read\s+the|see\s+below)", tail, re.I):
                 parts = re.split(r",\s*(?=\d)", tail, maxsplit=1)
-                if not re.fullmatch(r"(?:manufactur\w*|manuta\w*|mfd|mfg|packed|pkd|marketed|mktd|importer?|by|\s|&|:)+", parts[0], re.I):
+                if not re.fullmatch(r"(?:manufactur\w*|manuta\w*|mfd|mfg|mid|packed|pkd|marketed|mktd|importer?|by|\s|&|:)+", parts[0], re.I):
                     emit(role + "_NAME", name_sources, parts[0], heuristic=True)
                 if len(parts) > 1:
                     emit(role + "_ADDRESS", name_sources, parts[1], heuristic=True)
@@ -154,7 +195,7 @@ def extract(blocks, panel, product_name=None):
                 emit(role + "_ADDRESS", [block] + address_blocks,
                      " ".join(clean(b.raw_text) for b in address_blocks), heuristic=True)
         # Postal address detection for statutory manufacturer / packer address
-        if re.search(r"\b(?:plot\s*no\.?|road|street|nagar|estate|sector|lane|industrial\s+area)\b.*?(?:hyderabad|mumbai|delhi|bengaluru|chennai|kolkata|pune|gujarat|[A-Za-z]+-\d{2,6}|\b\d{6}\b)", text, re.I):
+        if p.POSTAL_ADDRESS.search(text) or (p.PINCODE_ONLY.search(text) and len(text.split()) >= 3):
             emit("MANUFACTURER_ADDRESS", [block], text, heuristic=True)
         care = p.CARE.search(text)
         if care:
@@ -199,11 +240,35 @@ def extract(blocks, panel, product_name=None):
         other = p.OTHER.search(text)
         if other:
             emit("OTHER", [block], other[1], heuristic=True)
-    if panel == "FRONT" and product_name and not any(item["declaration_type"] == "COMMON_PRODUCT_NAME" for item in results):
+
+    # Standalone fallback checks when mandatory items were not found via labeled patterns
+    if not any(item["declaration_type"] == "MRP" for item in results):
+        for block in blocks:
+            t = clean(block.raw_text)
+            m = p.STANDALONE_MRP.search(t)
+            if m:
+                data = money(m[1])
+                if data:
+                    emit("MRP", [block], data["amount"], data, heuristic=True, reason="Standalone currency value")
+                    break
+
+    if not any(item["declaration_type"] == "NET_QUANTITY" for item in results):
+        for block in blocks:
+            t = clean(block.raw_text)
+            m = p.STANDALONE_QUANTITY.search(t)
+            if m:
+                data = quantity(m[1], m[2])
+                if data:
+                    emit("NET_QUANTITY", [block], data["numeric_value"] + " " + data["unit"], data, heuristic=True)
+                    break
+
+    # Avoid attributing prominent back-panel text (like manufacturer names or nutrition facts) as commodity product title
+    has_back_panel_markers = any(re.search(r"nutrition|ingredient|manufactur|mkt\s*by|consumer\s*care|lic\.?\s*no|allergens", clean(b.raw_text), re.I) for b in blocks)
+    if panel == "FRONT" and not has_back_panel_markers and product_name and not any(item["declaration_type"] == "COMMON_PRODUCT_NAME" for item in results):
         titles = [b for b in blocks if 3 <= len(clean(b.raw_text)) <= 160
                   and re.search(r"[A-Za-z]{3}", b.raw_text)
                   and not p.BOUNDARY.search(clean(b.raw_text))
-                  and not re.search(r"nutrition|ingredients|energy|protein|fat|carbohydrate|www\.|@|\d", b.raw_text, re.I)]
+                  and not re.search(r"nutrition|ingredients|energy|protein|fat|carbohydrate|www\.|@|\d|fabrique", b.raw_text, re.I)]
         if titles:
             title = max(titles, key=lambda b: b.bounding_box.get("height", b.bounding_box.get("y_max",0)-b.bounding_box.get("y_min",0)))
             emit("COMMON_PRODUCT_NAME", [title], clean(title.raw_text), heuristic=True,

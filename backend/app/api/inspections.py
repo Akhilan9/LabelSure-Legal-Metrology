@@ -364,12 +364,17 @@ async def upload_inspection_images(
                 if item.strip():
                     flat_panels.append(item.strip())
 
-        chosen_panel = PanelType.FRONT
         if idx < len(flat_panels) and flat_panels[idx]:
             try:
                 chosen_panel = PanelType(flat_panels[idx].upper())
             except ValueError:
                 chosen_panel = PanelType.OTHER
+        elif len(files) == 2:
+            chosen_panel = PanelType.FRONT if idx == 0 else PanelType.BACK
+        elif len(inspection.images) >= 1:
+            chosen_panel = PanelType.BACK
+        else:
+            chosen_panel = PanelType.FRONT
 
         sha256_hash = calculate_sha256(content)
         stored_filename, storage_path = storage.generate_storage_path(inspection.id, ext)

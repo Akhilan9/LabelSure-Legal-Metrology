@@ -228,8 +228,8 @@ class ApiClient {
         item.bytes,
         filename: item.filename,
       ));
-      request.fields['panel_types'] = item.panelType;
     }
+    request.fields['panel_types'] = files.map((f) => f.panelType).join(',');
 
     final streamedResponse = await request.send().timeout(const Duration(minutes: 3));
     final response = await http.Response.fromStream(streamedResponse);

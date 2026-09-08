@@ -64,8 +64,8 @@ async def analyze_center_item(
     category: str = Form("General"),
     location: str = Form("Not Specified"),
     product_name: Optional[str] = Form(None),
-    brand_name: Optional[str] = Form(None),
-    panel_type: str = Form("FRONT"),
+    panel_type: Optional[str] = Form("FRONT"),
+    panel_types: Optional[str] = Form(None),
     files: list[UploadFile] = File(...),
     current_user: User = Depends(require_role(Role.INSPECTOR)),
     session: Session = Depends(get_session),
@@ -113,7 +113,24 @@ async def analyze_center_item(
         sha = calculate_sha256(contents)
         stored_filename, storage_path = storage.generate_storage_path(insp.id, ext)
         storage.save_file(storage_path, contents)
-        panel_enum = getattr(PanelType, panel_type.upper(), PanelType.FRONT)
+
+        # Parse panel types list
+        flat_panels = []
+        if panel_types:
+            for item in str(panel_types).split(","):
+                if item.strip():
+                    flat_panels.append(item.strip().upper())
+        elif panel_type and panel_type.strip():
+            for item in str(panel_type).split(","):
+                if item.strip():
+                    flat_panels.append(item.strip().upper())
+
+        if idx < len(flat_panels) and flat_panels[idx]:
+            panel_enum = getattr(PanelType, flat_panels[idx], PanelType.FRONT)
+        elif len(files) == 2:
+            panel_enum = PanelType.FRONT if idx == 0 else PanelType.BACK
+        else:
+            panel_enum = PanelType.FRONT
 
         img_obj = InspectionImage(
             id=str(uuid4()),
