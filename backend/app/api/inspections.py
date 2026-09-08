@@ -877,3 +877,33 @@ def get_inspection_ocr_summary(
         current_user=current_user,
     )
 
+
+@router.get(
+    "/{inspection_id}/color-marks",
+    status_code=status.HTTP_200_OK,
+)
+def get_inspection_color_marks(
+    inspection_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """
+    Scans and returns detected statutory color marks (Vegetarian green mark,
+    Non-Vegetarian brown/red mark, Yellow warning mark, Blue fortification mark).
+    """
+    inspection = session.get(Inspection, inspection_id)
+    if not inspection:
+        raise HTTPException(404, "Inspection not found")
+    if not can_access_inspection(current_user, inspection):
+        raise HTTPException(403, "Forbidden")
+
+    settings = request.app.state.settings
+    from app.services.color_marks import scan_inspection_color_marks
+    marks = scan_inspection_color_marks(inspection, settings.storage_local_dir)
+    return {
+        "inspection_id": inspection_id,
+        "total_marks": len(marks),
+        "detected_color_marks": marks,
+    }
+

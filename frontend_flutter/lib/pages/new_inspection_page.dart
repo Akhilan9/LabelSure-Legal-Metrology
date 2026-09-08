@@ -498,7 +498,7 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                       ? 'GLOBAL REGULATORY NOTICE: RESTRICTED / MANDATORY ALLERGEN RULES'
                       : 'GLOBAL REGULATORY STATUS: GLOBALLY PERMITTED';
               final bReason = banInfo?['reason']?.toString() ?? 'Standard packaged commodity. No overseas bans recorded.';
-              final bCountries = (banInfo?['countries'] as List?)?.map((e) => e.toString()).toList() ?? [];
+              final bCountries = ((banInfo?['countries'] ?? banInfo?['banned_countries']) as List?)?.map((e) => e.toString()).toList() ?? [];
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 18),
@@ -544,6 +544,87 @@ class _NewInspectionPageState extends State<NewInspectionPage> {
                         ],
                       ),
                     ],
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // Statutory Color & Dietary Label Marks
+          Builder(
+            builder: (context) {
+              final colorMarks = (_analysisResult?['detected_color_marks'] as List?)
+                      ?.map((e) => e as Map<String, dynamic>)
+                      .toList() ??
+                  [];
+              if (colorMarks.isEmpty) return const SizedBox.shrink();
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 18),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.emerald.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.verified_outlined, color: AppTheme.emerald, size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'STATUTORY COLOR & DIETARY MARKS DETECTED',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${colorMarks.length} FOUND',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.emerald),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: colorMarks.map((m) {
+                        final title = m['title']?.toString() ?? 'Mark';
+                        final colorName = m['color_name']?.toString() ?? 'GREEN';
+                        final conf = ((m['confidence'] as num?)?.toDouble() ?? 0.8) * 100;
+                        Color cColor = colorName == 'GREEN'
+                            ? AppTheme.emerald
+                            : (colorName == 'RED_BROWN' ? AppTheme.rose : AppTheme.amber);
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: cColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: cColor.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: cColor,
+                                  shape: colorName == 'YELLOW_AMBER' ? BoxShape.rectangle : BoxShape.circle,
+                                  borderRadius: colorName == 'YELLOW_AMBER' ? BorderRadius.circular(2) : null,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cColor)),
+                              const SizedBox(width: 6),
+                              Text('${conf.toStringAsFixed(0)}%', style: TextStyle(fontSize: 9.5, color: cColor.withValues(alpha: 0.7))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ],
                 ),
               );

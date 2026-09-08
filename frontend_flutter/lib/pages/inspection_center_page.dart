@@ -1484,7 +1484,7 @@ class _InspectionCenterPageState extends State<InspectionCenterPage> {
                   final banColor = isBanned ? AppTheme.rose : isRestricted ? AppTheme.amber : AppTheme.emerald;
                   final banIcon = isBanned ? Icons.gavel_rounded : isRestricted ? Icons.warning_amber_rounded : Icons.verified_user_outlined;
                   final banLabel = isBanned ? 'BANNED ABROAD' : isRestricted ? 'RESTRICTED' : 'PERMITTED';
-                  final banCountries = (ban?['countries'] as List?)?.join(', ') ?? '';
+                  final banCountries = ((ban?['countries'] ?? ban?['banned_countries']) as List?)?.join(', ') ?? '';
                   final banTooltip = isBanned
                       ? 'Prohibited in: $banCountries\n${ban?['reason'] ?? ''}'
                       : isRestricted
@@ -1944,7 +1944,7 @@ class _SequentialScannerDialogState extends State<_SequentialScannerDialog> {
                         final bColor = isBanned ? AppTheme.rose : isRestricted ? AppTheme.amber : AppTheme.emerald;
                         final bIcon = isBanned ? Icons.gavel_rounded : isRestricted ? Icons.warning_amber_rounded : Icons.verified_user_outlined;
                         final bTitle = isBanned ? 'BANNED IN FOREIGN JURISDICTIONS' : isRestricted ? 'RESTRICTED INTERNATIONALLY' : 'GLOBALLY PERMITTED COMMODITY';
-                        final bCountries = (ban['countries'] as List?)?.join(', ') ?? '';
+                        final bCountries = ((ban['countries'] ?? ban['banned_countries']) as List?)?.join(', ') ?? '';
 
                         return Container(
                           margin: const EdgeInsets.only(top: 8),

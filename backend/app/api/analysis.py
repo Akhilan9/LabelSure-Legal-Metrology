@@ -72,6 +72,9 @@ def analyze(inspection_id: str, request: Request, db: Session=Depends(get_sessio
                 break
     ban_info = check_international_bans(prod_name)
 
+    from app.services.color_marks import scan_inspection_color_marks
+    color_marks = scan_inspection_color_marks(inspection, settings.storage_local_dir)
+
     return {
         'inspection_id': inspection_id,
         'status': inspection.status,
@@ -80,6 +83,7 @@ def analyze(inspection_id: str, request: Request, db: Session=Depends(get_sessio
         'candidate_count': extraction.candidate_count,
         'evaluation': evaluation,
         'international_ban_info': ban_info,
+        'detected_color_marks': color_marks,
     }
 
 

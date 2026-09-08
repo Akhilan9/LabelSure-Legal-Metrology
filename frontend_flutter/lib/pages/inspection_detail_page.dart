@@ -40,6 +40,7 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
   List<OCRBlockData> _selectedImageBlocks = [];
   bool _loadingModalBlocks = false;
   String? _selectedBlockId;
+  List<Map<String, dynamic>> _colorMarks = [];
 
   @override
   void initState() {
@@ -69,12 +70,21 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
         if (rawRep is Map<String, dynamic>) rRes = rawRep;
       } catch (_) {}
 
+      List<Map<String, dynamic>> cMarks = [];
+      try {
+        final cRes = await ApiClient().get('/inspections/${widget.id}/color-marks');
+        if (cRes is Map<String, dynamic> && cRes['detected_color_marks'] is List) {
+          cMarks = (cRes['detected_color_marks'] as List).map((e) => e as Map<String, dynamic>).toList();
+        }
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _inspection = iRes is Map<String, dynamic> ? iRes : null;
           _ocrSummary = sRes;
           _evaluation = eRes;
           _reportSummary = rRes;
+          _colorMarks = cMarks;
           _loading = false;
         });
       }
@@ -651,6 +661,7 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
           ),
           if (banInfo != null || (insp['product_name'] != null && insp['product_name'].toString().isNotEmpty))
             _buildInternationalBanCard(banInfo, insp['product_name']?.toString()),
+          _buildColorMarksCard(_colorMarks),
         ],
       ),
     );
@@ -660,7 +671,7 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
     final status = banInfo?['status']?.toString() ?? 'PERMITTED';
     final isBanned = status == 'BANNED' || banInfo?['is_banned'] == true;
     final isRestricted = status == 'RESTRICTED';
-    final countries = (banInfo?['countries'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final countries = ((banInfo?['countries'] ?? banInfo?['banned_countries']) as List?)?.map((e) => e.toString()).toList() ?? [];
     final authorities = (banInfo?['authorities'] as List?)?.map((e) => e.toString()).toList() ?? [];
     final reason = banInfo?['reason']?.toString() ??
         'Standard packaged commodity cleared under Indian Legal Metrology. No overseas bans recorded.';
@@ -798,6 +809,216 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
           Text(
             'Statutory Advisory: $advisory',
             style: const TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: Color(0xFFCBD5E1)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorMarksCard(List<Map<String, dynamic>> marks) {
+    if (marks.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.only(top: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF1E293B)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.palette_outlined, size: 16, color: Color(0xFF64748B)),
+            SizedBox(width: 8),
+            Text(
+              'No statutory dietary/color marks detected on uploaded packaging panels.',
+              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A101D),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF1E293B), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified_outlined, color: AppTheme.emerald, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'STATUTORY COLOR & DIETARY LABEL MARKS (FSSAI / LMPC ENFORCEMENT)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.emerald.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.emerald.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  '${marks.length} DETECTED',
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.emerald),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: marks.map((m) {
+              final type = m['type']?.toString() ?? '';
+              final colorName = m['color_name']?.toString() ?? 'GREEN';
+              final title = m['title']?.toString() ?? 'Mark';
+              final standard = m['statutory_standard']?.toString() ?? '';
+              final desc = m['description']?.toString() ?? '';
+              final conf = ((m['confidence'] as num?)?.toDouble() ?? 0.8) * 100;
+
+              Color primaryColor = AppTheme.emerald;
+              Widget markEmblem;
+
+              if (type == 'VEGETARIAN' || colorName == 'GREEN') {
+                primaryColor = AppTheme.emerald;
+                markEmblem = Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    border: Border.all(color: AppTheme.emerald, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.emerald,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                );
+              } else if (type == 'NON_VEGETARIAN' || colorName == 'RED_BROWN') {
+                primaryColor = AppTheme.rose;
+                markEmblem = Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    border: Border.all(color: AppTheme.rose, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.rose,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                );
+              } else if (type == 'NUTRITIONAL_WARNING' || colorName == 'YELLOW_AMBER') {
+                primaryColor = AppTheme.amber;
+                markEmblem = Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    border: Border.all(color: AppTheme.amber, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.warning_amber_rounded, color: AppTheme.amber, size: 18),
+                  ),
+                );
+              } else {
+                primaryColor = Colors.lightBlueAccent;
+                markEmblem = Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    border: Border.all(color: Colors.lightBlueAccent, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Center(
+                    child: Text('+F', style: TextStyle(color: Colors.lightBlueAccent, fontWeight: FontWeight.bold, fontSize: 11)),
+                  ),
+                );
+              }
+
+              return Container(
+                width: 320,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: primaryColor.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    markEmblem,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${conf.toStringAsFixed(0)}% match',
+                                style: TextStyle(fontSize: 10, color: primaryColor.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            desc,
+                            style: const TextStyle(fontSize: 10.5, color: Colors.white70, height: 1.3),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            standard,
+                            style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
