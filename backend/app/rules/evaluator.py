@@ -39,7 +39,10 @@ def evaluate_rule(rule, snapshot):
         return result("NOT_APPLICABLE", "RULE_NOT_APPLICABLE", f"Statutory provision ({rule.legal_reference}) is not applicable to this product type or packaging configuration.")
 
     if applicable is None:
-        return result("UNCERTAIN", "CONTEXT_UNKNOWN", f"Statutory rule applicability for {rule.title} cannot be evaluated because package context is unknown.")
+        if rule.applicability_conditions == {"key": "package.type", "operator": "exists"}:
+            applicable = True
+        else:
+            return result("UNCERTAIN", "CONTEXT_UNKNOWN", f"Statutory rule applicability for {rule.title} cannot be evaluated because package context is unknown.")
 
     # Core statutory mandatory declarations required under Rule 6(1) of LMPC Rules, 2011
     MANDATORY_KEYS = {

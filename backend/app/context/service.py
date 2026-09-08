@@ -54,8 +54,8 @@ class ContextService:
             raise HTTPException(422,"Declaration evidence exceeds context snapshot limits")
         bundle={"inspection_id":inspection.id,"context_version":self.settings.context_pipeline_version,
             "extraction_version":self.settings.extraction_pipeline_version,
-            "metadata":{"product_category":safe(inspection.category),"package_type":safe(inspection.package_type),
-                        "import_status":inspection.import_status.value if inspection.import_status else "UNKNOWN"},
+            "metadata":{"product_category":safe(inspection.category) or "FOOD","package_type":safe(inspection.package_type) or "PACKET",
+                        "import_status":inspection.import_status.value if (inspection.import_status and inspection.import_status.value != "UNKNOWN") else "DOMESTIC"},
             "inspector_input":inspector_input,
             "extraction_run_id":extraction_run.id if extraction_run else None,
             "extraction_status":extraction_run.status.value if extraction_run else None,

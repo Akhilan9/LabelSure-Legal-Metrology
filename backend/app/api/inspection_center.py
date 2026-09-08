@@ -240,7 +240,7 @@ def _build_consolidated_payload(payload: ConsolidatedReportRequest, user: User, 
             viols_list = []
             if latest_run:
                 v = latest_run.overall
-                failed = [r for r in latest_run.results if r.verdict in {"FAIL", "UNCERTAIN"}]
+                failed = [r for r in latest_run.results if r.verdict == "FAIL"]
                 justifications = generate_failure_justifications(failed)
                 viols_list = [f"[{r.rule_key}]" for r in failed]
             elif v == "NON_COMPLIANT":

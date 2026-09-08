@@ -381,7 +381,7 @@ class ReportService:
         }
 
         from app.rules.justifications import generate_failure_justifications
-        failed_rules = [r for r in rule_evaluations if r["final_verdict"] in {"FAIL", "UNCERTAIN"}]
+        failed_rules = [r for r in rule_evaluations if r["final_verdict"] == "FAIL"]
         guideline_failure_justifications = generate_failure_justifications(failed_rules)
 
         generated_at = datetime.now(timezone.utc).isoformat()

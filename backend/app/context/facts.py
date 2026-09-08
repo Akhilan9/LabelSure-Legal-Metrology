@@ -31,6 +31,12 @@ def safe(value):
 def normalize(kind, value):
     text = safe(value)
     if not text:
+        if kind == "PACKAGE_TYPE":
+            return "PACKET"
+        if kind == "PRODUCT_CATEGORY":
+            return "FOOD"
+        if kind == "IMPORT_STATUS":
+            return "DOMESTIC"
         return "UNKNOWN"
     upper = text.upper().replace(" ","_")
     if kind == "PRODUCT_CATEGORY":

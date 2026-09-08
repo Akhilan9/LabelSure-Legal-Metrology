@@ -77,7 +77,7 @@ class RuleEngine:
 
     def summary(self,run):
         from app.rules.justifications import generate_failure_justifications
-        failed_rules = [r for r in run.results if r.verdict in {"FAIL", "UNCERTAIN"}]
+        failed_rules = [r for r in run.results if r.verdict == "FAIL"]
         failure_justifications = generate_failure_justifications(failed_rules)
         return {**{k:getattr(run,k) for k in ["id","inspection_id","rule_input_snapshot_id","snapshot_sha256",
             "ruleset_id","ruleset_version","ruleset_sha256","engine_version","evaluation_date","status","overall",
