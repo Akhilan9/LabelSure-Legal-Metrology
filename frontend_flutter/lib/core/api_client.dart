@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiException implements Exception {
   final int statusCode;
@@ -22,9 +23,27 @@ class ApiClient {
   factory ApiClient() => _instance;
   ApiClient._internal();
 
-  String baseUrl = 'http://127.0.0.1:8000/api/v1';
+  String baseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8000/api/v1');
   String? _accessToken;
   void Function()? onUnauthorized;
+
+  Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedUrl = prefs.getString('api_base_url');
+      if (savedUrl != null && savedUrl.trim().isNotEmpty) {
+        baseUrl = savedUrl.trim();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> setBaseUrl(String url) async {
+    baseUrl = url.trim();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('api_base_url', baseUrl);
+    } catch (_) {}
+  }
 
   void setAccessToken(String? token) {
     _accessToken = token;

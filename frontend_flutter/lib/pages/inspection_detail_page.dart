@@ -624,8 +624,7 @@ class _InspectionDetailPageState extends State<InspectionDetailPage> {
   }
 
   Widget _buildProductSpecsCard(Map<String, dynamic> insp) {
-    final banInfo = (insp['international_ban_info'] as Map<String, dynamic>?) ??
-        (_analysisResult?['international_ban_info'] as Map<String, dynamic>?);
+    final banInfo = insp['international_ban_info'] as Map<String, dynamic>?;
 
     return Container(
       decoration: AppTheme.glassPanel(),

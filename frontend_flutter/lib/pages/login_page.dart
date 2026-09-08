@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../core/api_client.dart';
 import '../core/auth_state.dart';
 import '../core/theme.dart';
 
@@ -45,6 +46,70 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _showServerConfigDialog() {
+    final ctrl = TextEditingController(text: ApiClient().baseUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0xFF1E293B)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: AppTheme.emerald, size: 20),
+            SizedBox(width: 8),
+            Text('Backend Server URL', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Specify your LabelSure backend server address. For mobile testing on Wi-Fi, enter your laptop\'s IP (e.g. http://192.168.1.10:8000/api/v1).',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: ctrl,
+              style: const TextStyle(fontSize: 12, color: Colors.white, fontFamily: 'monospace'),
+              decoration: InputDecoration(
+                labelText: 'API Base URL',
+                hintText: 'http://192.168.x.x:8000/api/v1',
+                filled: true,
+                fillColor: const Color(0xFF1E293B),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.emerald,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () async {
+              final newUrl = ctrl.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiClient().setBaseUrl(newUrl);
+                if (mounted) setState(() {});
+              }
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            child: const Text('Save Server', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -280,7 +345,32 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
+
+          InkWell(
+            onTap: _showServerConfigDialog,
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.dns_rounded, size: 13, color: AppTheme.emerald),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Server: ${ApiClient().baseUrl}',
+                      style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontFamily: 'monospace'),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.edit_outlined, size: 11, color: Color(0xFF64748B)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
 
           const Text(
             'For an account or password reset, contact your workspace administrator.',
