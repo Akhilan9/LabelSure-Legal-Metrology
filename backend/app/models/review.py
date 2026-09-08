@@ -7,7 +7,7 @@ from app.models.user import utc_now
 
 
 def choice(name, *values):
-    return SAEnum(*values, name=name, native_enum=False, create_constraint=True, validate_strings=True)
+    return SAEnum(*values, name=name, native_enum=False, create_constraint=False, validate_strings=True)
 
 
 class InspectionReview(Base):
@@ -18,7 +18,7 @@ class InspectionReview(Base):
     reviewer_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
     status: Mapped[str] = mapped_column(choice("review_status", "DRAFT", "FINALIZED", "REOPENED"), default="DRAFT")
     final_compliance_status: Mapped[str | None] = mapped_column(
-        choice("review_compliance_status", "COMPLIANT", "NON_COMPLIANT", "CONDITIONAL_COMPLIANCE", "REJECTED"),
+        choice("review_compliance_status", "COMPLIANT", "NON_COMPLIANT", "CONDITIONAL_COMPLIANCE", "REJECTED", "UNCERTAIN"),
         nullable=True
     )
     summary_notes: Mapped[str | None] = mapped_column(Text, nullable=True)

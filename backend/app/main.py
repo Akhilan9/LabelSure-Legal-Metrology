@@ -54,10 +54,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return response
 
-    app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
-                       allow_credentials=False,
-                       allow_methods=["GET", "POST", "PATCH", "DELETE"],
-                       allow_headers=["Authorization", "Content-Type"])
+    if settings.environment in {"development", "test"}:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
+                           allow_credentials=False,
+                           allow_methods=["GET", "POST", "PATCH", "DELETE"],
+                           allow_headers=["Authorization", "Content-Type"])
     app.include_router(router, prefix="/api/v1", tags=["System"])
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(repository_router, prefix="/api/v1")

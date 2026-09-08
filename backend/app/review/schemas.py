@@ -9,7 +9,7 @@ class StrictModel(BaseModel):
 
 VerdictType = Literal["PASS", "FAIL", "UNCERTAIN", "NOT_APPLICABLE"]
 ReviewStatus = Literal["DRAFT", "FINALIZED", "REOPENED"]
-FinalComplianceStatus = Literal["COMPLIANT", "NON_COMPLIANT", "CONDITIONAL_COMPLIANCE", "REJECTED"]
+FinalComplianceStatus = Literal["COMPLIANT", "NON_COMPLIANT", "CONDITIONAL_COMPLIANCE", "REJECTED", "UNCERTAIN"]
 CorrectionAction = Literal["CONFIRMED", "CORRECTED", "REJECTED", "MANUALLY_ADDED"]
 
 

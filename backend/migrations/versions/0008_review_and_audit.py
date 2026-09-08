@@ -15,7 +15,7 @@ def upgrade():
         sa.Column('inspection_id', sa.String(length=36), nullable=False),
         sa.Column('reviewer_user_id', sa.String(length=36), nullable=False),
         sa.Column('status', sa.Enum('DRAFT', 'FINALIZED', 'REOPENED', name='review_status', native_enum=False, create_constraint=True), nullable=False),
-        sa.Column('final_compliance_status', sa.Enum('COMPLIANT', 'NON_COMPLIANT', 'CONDITIONAL_COMPLIANCE', 'REJECTED', name='review_compliance_status', native_enum=False, create_constraint=True), nullable=True),
+        sa.Column('final_compliance_status', sa.Enum('COMPLIANT', 'NON_COMPLIANT', 'CONDITIONAL_COMPLIANCE', 'REJECTED', 'UNCERTAIN', name='review_compliance_status', native_enum=False, create_constraint=False), nullable=True),
         sa.Column('summary_notes', sa.Text(), nullable=True),
         sa.Column('finalized_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
